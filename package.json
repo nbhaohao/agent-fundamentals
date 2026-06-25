@@ -1,0 +1,23 @@
+{
+  "name": "agent-fundamentals",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "verify": "vitest run tests/m01.test.ts",
+    "v": "vitest run -t",
+    "v:s03": "tsx --env-file .env src/s03-minimal-loop/run.ts",
+    "v:s04": "tsx --env-file .env src/s04-llm-fundamentals/run.ts",
+    "v:s05": "tsx --env-file .env src/s05-framework-reality/run.ts"
+  },
+  "dependencies": {
+    "@ai-sdk/anthropic": "^1.2.0",
+    "ai": "^4.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.0"
+  }
+}
