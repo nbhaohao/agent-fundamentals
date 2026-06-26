@@ -1,4 +1,4 @@
-import type { Message } from "../_shared/types.js";
+import type {Message} from "../_shared/types.js";
 
 /**
  * KV Cache 的本质：模型逐 token 自回归生成，但「相同前缀」那部分的注意力计算可以复用。
@@ -8,12 +8,10 @@ import type { Message } from "../_shared/types.js";
  * @returns 从第 0 条开始、连续完全相同的 message 条数（role 与 content 都相同才算相同）
  */
 export function sharedPrefixLen(a: Message[], b: Message[]): number {
-  // TODO: stage s04 —— 求最长公共前缀长度（5~8 行）
-  // 1. let i = 0
-  // 2. while (i < a.length && i < b.length) {
-  // 3.   if (a[i].role !== b[i].role || a[i].content !== b[i].content) break  // 前缀一断就停
-  // 4.   i++
-  // 5. }
-  // 6. return i
-  throw new Error("TODO: stage s04 —— 实现 sharedPrefixLen");
+    let i = 0;
+    while (i < a.length && i < b.length) {
+        if (a[i].role !== b[i].role || a[i].content !== b[i].content) break
+        i++;
+    }
+    return i;
 }
