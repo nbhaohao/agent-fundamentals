@@ -10,11 +10,9 @@ export type ChainStep = (input: string) => Promise<string>;
  * @returns 跑完所有步骤后、最后一步的输出
  */
 export async function runChain(steps: ChainStep[], input: string): Promise<string> {
-  // TODO: stage s05 —— 顺序跑链（4~6 行）
-  // 1. let cur = input
-  // 2. for (const step of steps) {
-  // 3.   cur = await step(cur)    // 固定顺序、固定步数——没有「模型决定下一步」这回事
-  // 4. }
-  // 5. return cur
-  throw new Error("TODO: stage s05 —— 实现 runChain");
+    let cur = input
+    for (const step of steps) {
+        cur = await step(input);
+    }
+    return cur;
 }
