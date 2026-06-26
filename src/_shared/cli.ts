@@ -14,10 +14,10 @@ export function traceSay(text: string): void {
   if (text.trim()) console.log(`  💬 ${text}`);
 }
 
-/** 没配 key 时给一句友好提示而不是堆栈。 */
-export function requireKey(): void {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error("⚠️  缺 ANTHROPIC_API_KEY —— 复制 .env.example 成 .env 填 key。测试(pnpm verify)不需要 key。");
+/** 没配 key 时给一句友好提示而不是堆栈。name 默认 DEEPSEEK_API_KEY。 */
+export function requireKey(name = "DEEPSEEK_API_KEY"): void {
+  if (!process.env[name]) {
+    console.error(`⚠️  缺 ${name} —— 复制 .env.example 成 .env 填 key。测试(pnpm verify)不需要 key。`);
     process.exit(1);
   }
 }

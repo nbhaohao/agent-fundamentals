@@ -1,7 +1,7 @@
 // pnpm v:s03 —— 真打通 LLM：给 runLoop 接真 Anthropic + 真 read_file 工具，跑一个真任务看它自己转几轮。
 import { readFile } from "node:fs/promises";
 import { runLoop } from "./exercise.js";
-import { createAnthropicLLM } from "../_shared/llm.js";
+import { createDeepSeekLLM } from "../_shared/llm.js";
 import { banner, traceTool, traceSay, requireKey } from "../_shared/cli.js";
 import type { LLM, Tool, ToolCall, ToolResult } from "../_shared/types.js";
 
@@ -31,7 +31,7 @@ const execute = async (c: ToolCall): Promise<ToolResult> => {
 };
 
 // 关键：loop 本身工具无关。把 tools 注入到「llm」里——runLoop 调 llm.chat(messages) 时自动带上工具定义。
-const base = createAnthropicLLM();
+const base = createDeepSeekLLM();
 const llm: LLM = {
   chat: async (messages, opts) => {
     const r = await base.chat(messages, { ...opts, tools });
