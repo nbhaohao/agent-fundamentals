@@ -5,7 +5,10 @@
 
 /** 可重试：问题在服务端，等一等可能恢复（429限流/529过载/503不可用/408超时）。 */
 export class RetryableError extends Error {
-  constructor(message: string, public readonly statusCode?: number) {
+  constructor(
+    message: string,
+    public readonly statusCode?: number,
+  ) {
     super(message);
     this.name = "RetryableError";
   }
@@ -13,7 +16,10 @@ export class RetryableError extends Error {
 
 /** 不可重试：问题在客户端，重试不会自愈（400格式错/401密钥过期/402欠费/403权限不足）。 */
 export class NonRetryableError extends Error {
-  constructor(message: string, public readonly statusCode?: number) {
+  constructor(
+    message: string,
+    public readonly statusCode?: number,
+  ) {
     super(message);
     this.name = "NonRetryableError";
   }
@@ -26,10 +32,12 @@ export class NonRetryableError extends Error {
  * @param statusCode  HTTP 响应状态码
  * @returns 'retryable' 可重试 | 'non-retryable' 立刻抛出
  */
-export function classifyError(statusCode: number): "retryable" | "non-retryable" {
-  // TODO: stage s07 —— 2 行
-  // [429, 529, 503, 408].includes(statusCode) ? 'retryable' : 'non-retryable'
-  throw new Error("TODO: stage s07 —— 实现 classifyError");
+export function classifyError(
+  statusCode: number,
+): "retryable" | "non-retryable" {
+  return [429, 529, 503, 408].includes(statusCode)
+    ? "retryable"
+    : "non-retryable";
 }
 
 function sleep(ms: number): Promise<void> {
@@ -54,16 +62,16 @@ export async function retryWithBackoff<T>(
   maxRetries = 3,
   baseDelayMs = 100,
 ): Promise<T> {
-  // TODO: stage s07 —— 指数退避重试（10~15 行）
-  // 1. let attempt = 0
-  // 2. while (true) {
-  // 3.   try { return await fn() }
-  // 4.   catch (err) {
-  // 5.     if (!(err instanceof RetryableError) || attempt >= maxRetries) throw err
-  // 6.     const delay = baseDelayMs * Math.pow(2, attempt) + Math.random() * baseDelayMs
-  // 7.     await sleep(delay)
-  // 8.     attempt++
-  // 9.   }
-  // 10. }
-  throw new Error("TODO: stage s07 —— 实现 retryWithBackoff");
+  let attempt = 0;
+  while (true) {
+    try {
+      return await fn();
+    } catch (err) {
+      if (!(err instanceof RetryableError) || attempt >= maxRetries) throw err;
+      const delay =
+        baseDelayMs * Math.pow(2, attempt) + Math.random() * baseDelayMs;
+      await sleep(delay);
+      attempt++;
+    }
+  }
 }
