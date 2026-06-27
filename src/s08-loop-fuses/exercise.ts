@@ -7,17 +7,21 @@ import type { LLM, Message, ToolCall, ToolResult } from "../_shared/types.js";
  *   JavaScript 对象 key 顺序不确定，先排序再 stringify，
  *   保证 {a:1,b:2} 和 {b:2,a:1} 产出同一指纹。
  */
-export function fingerprint(name: string, args: Record<string, unknown>): string {
-  // TODO: stage s08 —— 2 行
-  // 1. const stable = JSON.stringify(args, Object.keys(args).sort())
-  // 2. return createHash('sha256').update(name + stable).digest('hex').slice(0, 12)
-  throw new Error("TODO: stage s08 —— 实现 fingerprint");
+export function fingerprint(
+  name: string,
+  args: Record<string, unknown>,
+): string {
+  const stable = JSON.stringify(args, Object.keys(args).sort());
+  return createHash("sha256")
+    .update(name + stable)
+    .digest("hex")
+    .slice(0, 12);
 }
 
 /** 一个工具调用指纹的历史记录 */
 export interface LoopEntry {
-  count: number;       // 连续同结果重复次数
-  lastResult: string;  // 上一次工具结果
+  count: number; // 连续同结果重复次数
+  lastResult: string; // 上一次工具结果
 }
 
 /**
@@ -42,17 +46,15 @@ export function checkLoop(
   warnAt = 5,
   breakAt = 10,
 ): "ok" | "warn" | "break" {
-  // TODO: stage s08 —— 8~12 行
-  // 1. const fp = fingerprint(name, args)
-  // 2. const entry = history.get(fp) ?? { count: 0, lastResult: '' }
-  // 3. if (entry.lastResult === result) entry.count++
-  // 4. else entry.count = 1          ← 结果变了，重新计数（有进展）
-  // 5. entry.lastResult = result
-  // 6. history.set(fp, entry)
-  // 7. if (entry.count >= breakAt) return 'break'
-  // 8. if (entry.count >= warnAt)  return 'warn'
-  // 9. return 'ok'
-  throw new Error("TODO: stage s08 —— 实现 checkLoop");
+  const fp = fingerprint(name, args);
+  const entry = history.get(fp) ?? { count: 0, lastResult: "" };
+  if (entry.lastResult === result) entry.count++;
+  else entry.count = 1; // 结果变了，重新计数（有进展）
+  entry.lastResult = result;
+  history.set(fp, entry);
+  if (entry.count >= breakAt) return "break";
+  if (entry.count >= warnAt) return "warn";
+  return "ok";
 }
 
 /** Loop 被保险丝强制中断时抛出 */
@@ -79,23 +81,33 @@ export async function guardedLoop(
   execute: (call: ToolCall) => Promise<ToolResult>,
   maxTurns = 20,
 ): Promise<Message[]> {
-  // TODO: stage s08 —— 带保险丝的 loop（~20 行）
-  // 1.  const history = new Map<string, LoopEntry>()
-  // 2.  let turns = 0
-  // 3.  while (true) {
-  // 4.    turns++
-  // 5.    if (turns > maxTurns) throw new LoopFuseError('max_turns')
-  // 6.    const res = await llm.chat(messages)
-  // 7.    messages.push({ role: 'assistant', content: res.text, toolCalls: res.toolCalls })
-  // 8.    if (res.toolCalls.length === 0) break
-  // 9.    for (const call of res.toolCalls) {
-  // 10.     const result = await execute(call)
-  // 11.     messages.push({ role: 'tool', content: result.content, toolCallId: result.toolCallId })
-  // 12.     const status = checkLoop(call.name, call.args, result.content, history)
-  // 13.     if (status === 'break') throw new LoopFuseError('dead_loop')
-  // 14.     if (status === 'warn')  messages.push({ role: 'system', content: '[LOOP_WARNING] 你在重复操作且无进展，请换一种方式。' })
-  // 15.   }
-  // 16. }
-  // 17. return messages
-  throw new Error("TODO: stage s08 —— 实现 guardedLoop");
+  const history = new Map<string, LoopEntry>();
+  let turns = 0;
+  while (true) {
+    turns++;
+    if (turns > maxTurns) throw new LoopFuseError("max_turns");
+    const res = await llm.chat(messages);
+    messages.push({
+      role: "assistant",
+      content: res.text,
+      toolCalls: res.toolCalls,
+    });
+    if (res.toolCalls.length === 0) break;
+    for (const call of res.toolCalls) {
+      const result = await execute(call);
+      messages.push({
+        role: "tool",
+        content: result.content,
+        toolCallId: result.toolCallId,
+      });
+      const status = checkLoop(call.name, call.args, result.content, history);
+      if (status === "break") throw new LoopFuseError("dead_loop");
+      if (status === "warn")
+        messages.push({
+          role: "system",
+          content: "[LOOP_WARNING] 你在重复操作且无进展，请换一种方式。",
+        });
+    }
+  }
+  return messages;
 }
