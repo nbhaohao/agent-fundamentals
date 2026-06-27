@@ -1,8 +1,8 @@
-// pnpm v:s06 —— 真打通 sonnet（需 ANTHROPIC_API_KEY）
+// pnpm v:s06 —— 真打通 DeepSeek（需 DEEPSEEK_API_KEY）
 // 用 read_file 工具演示流式 loop：模型决定读哪几个文件，你看事件一条条 yield 出来。
 import { readFile } from "node:fs/promises";
 import { streamLoop } from "./exercise.js";
-import { createAnthropicLLM } from "../_shared/llm.js";
+import { createDeepSeekLLM } from "../_shared/llm.js";
 import { banner, requireKey } from "../_shared/cli.js";
 import type { Tool, ToolCall, ToolResult, Message } from "../_shared/types.js";
 
@@ -27,7 +27,7 @@ const tools: Tool[] = [
 ];
 const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
 
-const llm = createAnthropicLLM();
+const llm = createDeepSeekLLM();
 const llmWithTools = {
   chat: async (msgs: Message[], opts?: any) => llm.chat(msgs, { ...opts, tools }),
 };
