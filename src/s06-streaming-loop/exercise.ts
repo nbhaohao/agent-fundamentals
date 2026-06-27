@@ -14,9 +14,9 @@ export type StreamEvent =
  *   其余视为写操作，必须串行。
  */
 export function isReadOnly(toolName: string): boolean {
-  // TODO: stage s06 —— 一行
-  // ['read', 'search', 'list', 'get'].some(kw => toolName.toLowerCase().includes(kw))
-  throw new Error("TODO: stage s06 —— 实现 isReadOnly");
+  return ["read", "search", "list", "get"].some((kw) =>
+    toolName.toLowerCase().includes(kw),
+  );
 }
 
 /**
@@ -36,28 +36,44 @@ export async function* streamLoop(
   llm: LLM,
   execute: (call: ToolCall) => Promise<ToolResult>,
 ): AsyncGenerator<StreamEvent> {
-  // TODO: stage s06 —— 实现流式 loop（~25 行）
-  // 1. while (true) {
-  // 2.   const res = await llm.chat(messages)
-  // 3.   yield { type: 'text', text: res.text }
-  // 4.   if (res.toolCalls.length === 0) { yield { type: 'done' }; return }
-  // 5.   messages.push({ role: 'assistant', content: res.text, toolCalls: res.toolCalls })
-  // 6.   const reads = res.toolCalls.filter(c => isReadOnly(c.name))
-  // 7.   const writes = res.toolCalls.filter(c => !isReadOnly(c.name))
-  // 8.   // 只读并发：先 yield start × N，await Promise.all，再按序 yield end + push result
-  // 9.   for (const c of reads) yield { type: 'tool_start', id: c.id, name: c.name }
-  // 10.  const readResults = await Promise.all(reads.map(c => execute(c)))
-  // 11.  for (let i = 0; i < reads.length; i++) {
-  // 12.    yield { type: 'tool_end', id: reads[i].id, name: reads[i].name, result: readResults[i].content }
-  // 13.    messages.push({ role: 'tool', content: readResults[i].content, toolCallId: readResults[i].toolCallId })
-  // 14.  }
-  // 15.  // 写操作串行
-  // 16.  for (const c of writes) {
-  // 17.    yield { type: 'tool_start', id: c.id, name: c.name }
-  // 18.    const r = await execute(c)
-  // 19.    yield { type: 'tool_end', id: c.id, name: c.name, result: r.content }
-  // 20.    messages.push({ role: 'tool', content: r.content, toolCallId: r.toolCallId })
-  // 21.  }
-  // 22. }
-  throw new Error("TODO: stage s06 —— 实现 streamLoop");
+  while (true) {
+    const res = await llm.chat(messages);
+    yield { type: "text", text: res.text };
+    if (res.toolCalls.length === 0) {
+      yield { type: "done" };
+      return;
+    }
+    messages.push({
+      role: "assistant",
+      content: res.text,
+      toolCalls: res.toolCalls,
+    });
+    const reads = res.toolCalls.filter((c) => isReadOnly(c.name));
+    const writes = res.toolCalls.filter((c) => !isReadOnly(c.name));
+    for (const c of reads) yield { type: "tool_start", id: c.id, name: c.name };
+    const readResults = await Promise.all(reads.map((c) => execute(c)));
+    for (let i = 0; i < reads.length; i++) {
+      yield {
+        type: "tool_end",
+        id: reads[i].id,
+        name: reads[i].name,
+        result: readResults[i].content,
+      };
+      messages.push({
+        role: "tool",
+        content: readResults[i].content,
+        toolCallId: readResults[i].toolCallId,
+      });
+    }
+    for (const c of writes) {
+      yield { type: "tool_start", id: c.id, name: c.name };
+      const r = await execute(c);
+      yield { type: "tool_end", id: c.id, name: c.name, result: r.content };
+      messages.push({
+        role: "tool",
+        content: r.content,
+        toolCallId: r.toolCallId,
+      });
+    }
+  }
 }
