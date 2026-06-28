@@ -21,15 +21,18 @@ export interface SkillMeta {
  * 其余是 body。没有 frontmatter 时 name/description 为空、body = 原文。
  */
 export function parseSkill(md: string): SkillMeta {
-  // TODO: stage s13 —— ~14 行
-  // 1. 默认 meta = { name:"", description:"", body: md }
-  // 2. 用正则抓两条 --- 之间的 front 和后面的 body：/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/
-  //    没匹配到（无 frontmatter）→ return 默认 meta
-  // 3. meta.body = body.trim()
-  // 4. front 按行拆，每行找第一个 ":" 切 key/value（trim）
-  // 5. key==="name"/"description" → 填；key==="when_to_use" → meta.whenToUse
-  // 6. return meta
-  throw new Error("TODO: stage s13 —— 实现 parseSkill");
+  const meta: SkillMeta = { name: "", description: "", body: md };
+  const match = md.match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/);
+  if (!match) return meta;
+  const [, front, body] = match;
+  meta.body = body.trim();
+  for (const line of front.trim().split("\n")) {
+    const [key, value] = line.split(":").map((s) => s.trim());
+    if (key === "name") meta.name = value;
+    if (key === "description") meta.description = value;
+    if (key === "when_to_use") meta.whenToUse = value;
+  }
+  return meta;
 }
 
 /**
@@ -42,5 +45,13 @@ export function matchSkills(query: string, skills: SkillMeta[]): SkillMeta[] {
   // 1. bigrams(s)：去空格小写后切成相邻两字片段数组（中文不靠空格分词）
   // 2. qg = bigrams(query)
   // 3. 过滤 skills：hay = (description + whenToUse) 去空格小写；qg 里任一片段被 hay 包含 → 相关
-  throw new Error("TODO: stage s13 —— 实现 matchSkills");
+  const bigrams = (s: string) => s.toLowerCase().replace(/\s/g, "").split("");
+  const qg = bigrams(query);
+
+  return skills.filter((s) => {
+    const hay = (s.description + (s.whenToUse ?? ""))
+      .toLowerCase()
+      .replace(/\s/g, "");
+    return qg.some((q) => hay.includes(q));
+  });
 }
