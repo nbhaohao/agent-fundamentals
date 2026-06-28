@@ -16,10 +16,10 @@ export interface Scored extends Chunk {
  * 这就是 RAG 管线的「检索」步：embed query → 逐块算相似度 → 取 top-k 注入上下文。
  */
 export function retrieve(query: string, chunks: Chunk[], k: number): Scored[] {
-  // TODO: stage s20 —— ~6 行
-  // 1. qVec = mockEmbed(query)
-  // 2. 对每个 chunk：score = cosine(qVec, mockEmbed(chunk.text))，组成 { ...chunk, score }
-  // 3. 按 score 降序排序
-  // 4. 取前 k 个返回
-  throw new Error("TODO: stage s20 —— 实现 retrieve");
+  const qVec = mockEmbed(query);
+  const scoredChunks = chunks.map((chunk) => ({
+    ...chunk,
+    score: cosine(qVec, mockEmbed(chunk.text)),
+  }));
+  return scoredChunks.sort((a, b) => b.score - a.score).slice(0, k);
 }
