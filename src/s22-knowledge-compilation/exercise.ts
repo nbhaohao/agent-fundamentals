@@ -28,15 +28,17 @@ export interface IngestResult {
  * 摄入一篇新文档：建条目，并和已有条目里「共享至少一个关键词」的互相加交叉引用。
  * @param doc 新文档（不带 links，links 由本函数建立）
  */
-export function ingest(doc: Omit<Entry, "links">, kb: KB): IngestResult {
-  // TODO: stage s22 —— ~12 行
-  // 1. 浅拷贝 kb（别改入参）；entry = { ...doc, links: [] }
-  // 2. touched = [entry.id]
-  // 3. 遍历 kb 里每个已有条目 e：
-  //      若 e.keywords 和 doc.keywords 有交集（至少一个相同）：
-  //        entry.links.push(e.id)            // 新条目 → 旧
-  //        给旧条目也加回链 e.links.push(entry.id)（双向）
-  //        touched.push(e.id)
-  // 4. 把 entry 放进 kb；return { kb, touched }
-  throw new Error("TODO: stage s22 —— 实现 ingest");
+export function ingest(doc: Omit<Entry, "links">, kb: KB): IngestResult {git add -A && git commit -m "feat(m04-s22): 编译知识库 ingest 互链（共享关键词双向 + 知识复利）" && git push
+  const kbCopy = { ...kb };
+  const entry: Entry = { ...doc, links: [] };
+  const touched: string[] = [entry.id];
+  for (const e of Object.values(kbCopy)) {
+    if (e.keywords.some((k) => doc.keywords.includes(k))) {
+      entry.links.push(e.id);
+      e.links.push(entry.id);
+      touched.push(e.id);
+    }
+  }
+  kbCopy[entry.id] = entry;
+  return { kb: kbCopy, touched };
 }
