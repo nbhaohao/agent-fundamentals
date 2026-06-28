@@ -8,6 +8,7 @@
     "verify:m02": "vitest run tests/m02.test.ts",
     "verify:m03": "vitest run tests/m03.test.ts",
     "verify:m04": "vitest run tests/m04.test.ts",
+    "verify:m05": "vitest run tests/m05.test.ts",
     "v": "vitest run -t",
     "v:s03": "tsx --env-file .env src/s03-minimal-loop/run.ts",
     "v:s04": "tsx --env-file .env src/s04-llm-fundamentals/run.ts",
@@ -28,7 +29,9 @@
     "v:s21": "tsx src/s21-retrieval-optimization/run.ts",
     "v:s22": "tsx src/s22-knowledge-compilation/run.ts",
     "v:s23": "tsx src/s23-memory-system/run.ts",
-    "v:s24": "tsx src/s24-memory-failures/run.ts"
+    "v:s24": "tsx src/s24-memory-failures/run.ts",
+    "v:s25": "tsx src/s25-subagent/run.ts",
+    "v:s26": "tsx src/s26-swarm/run.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.0",
