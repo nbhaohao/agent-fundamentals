@@ -31,21 +31,29 @@ export class MinimalMcpClient {
 
   /** tools/list → 给每个工具名加 mcp__<server>__ 前缀返回。 */
   async listTools(): Promise<McpTool[]> {
-    // TODO: stage s12 —— ~4 行
-    // 1. res = await this.transport({ method: "tools/list" })
-    // 2. res.error → throw
-    // 3. tools = res.result?.tools ?? []
-    // 4. return tools.map(t => ({ ...t, name: `mcp__${this.server}__${t.name}` }))
-    throw new Error("TODO: stage s12 —— 实现 listTools");
+    const res = await this.transport({ method: "tools/list" });
+    if (res.error) throw new Error(res.error.message);
+    const tools = res.result?.tools ?? [];
+    return tools.map((t: McpTool) => ({
+      ...t,
+      name: `mcp__${this.server}__${t.name}`,
+    }));
   }
 
   /** tools/call → 去掉命名空间前缀，转发裸工具名给 server。 */
-  async callTool(namespacedName: string, args: Record<string, unknown>): Promise<string> {
-    // TODO: stage s12 —— ~6 行
-    // 1. prefix = `mcp__${this.server}__`；bare = namespacedName 去掉 prefix（startsWith 才去）
-    // 2. res = await this.transport({ method: "tools/call", params: { name: bare, arguments: args } })
-    // 3. res.error → throw
-    // 4. return res.result?.content ?? ""
-    throw new Error("TODO: stage s12 —— 实现 callTool");
+  async callTool(
+    namespacedName: string,
+    args: Record<string, unknown>,
+  ): Promise<string> {
+    const prefix = `mcp__${this.server}__`;
+    const bare = namespacedName.startsWith(prefix)
+      ? namespacedName.slice(prefix.length)
+      : namespacedName;
+    const res = await this.transport({
+      method: "tools/call",
+      params: { name: bare, arguments: args },
+    });
+    if (res.error) throw new Error(res.error.message);
+    return res.result?.content ?? "";
   }
 }
