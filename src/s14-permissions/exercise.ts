@@ -14,13 +14,13 @@ export type Decision = "allow" | "ask" | "deny";
  *   allow—— 其余（git、npm、ls、cat… 这些日常安全命令）
  */
 export function classifyCommand(cmd: string): Decision {
-  // TODO: stage s14 —— ~12 行，规则从严到宽逐条 return
-  // 1. c = cmd.trim()
-  // 2. deny（不可逆/系统级）：fork bomb（含 ":(){" 或 /:\s*\|\s*:/）、rm -rf、sudo、mkfs、chmod 777
-  // 3. ask（任意代码/网络）：curl|wget|ssh、python -c、node -e、eval
-  // 4. 其余 return "allow"
   // 提示：危险模式用 \b 词边界正则，避免误伤（如 "format" 不该命中 mkfs）
-  throw new Error("TODO: stage s14 —— 实现 classifyCommand");
+  const c = cmd.trim();
+  if (c.match(/:\s*\|\s*:/)) return "deny";
+  if (c.match(/\b(fork\s+bomb|rm\s+-rf|sudo|mkfs|chmod\s+777)\b/))
+    return "deny";
+  if (c.match(/\b(curl|wget|ssh|python\s+-c|node\s+-e|eval)\b/)) return "ask";
+  return "allow";
 }
 
 /**
@@ -33,19 +33,17 @@ export class VetoTracker {
 
   /** 记录一次「分类器判断 vs 用户决定」：用户否决 → 累加，用户同意 → 重置。 */
   record(userAgreed: boolean): void {
-    // TODO: stage s14 —— userAgreed ? 归零 : this.vetoes++
-    throw new Error("TODO: stage s14 —— 实现 record");
+    if (userAgreed) this.vetoes = 0;
+    else this.vetoes++;
   }
 
   /** 是否已降级到手动确认模式。 */
   get downgraded(): boolean {
-    // TODO: stage s14 —— this.vetoes >= this.maxVetoes
-    throw new Error("TODO: stage s14 —— 实现 downgraded");
+    return this.vetoes >= this.maxVetoes;
   }
 
   /** 最终决策：已降级则一律 ask，否则走分类器。 */
   decide(cmd: string): Decision {
-    // TODO: stage s14 —— downgraded ? "ask" : classifyCommand(cmd)
-    throw new Error("TODO: stage s14 —— 实现 decide");
+    return this.downgraded ? "ask" : classifyCommand(cmd);
   }
 }
