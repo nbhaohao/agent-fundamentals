@@ -36,5 +36,21 @@ export function validateToolCall(
   // 4.   typeof val !== rule.type → push「应为 X 收到了 Y」（错误信息要清晰，给模型看）
   // 5.   rule.enum 存在且 val 不在 enum 里 → push「必须是 [...] 之一」
   // 6. return { ok: errors.length === 0, errors }
-  throw new Error("TODO: stage s09 —— 实现 validateToolCall");
+  const errors: string[] = [];
+  for (const [field, rule] of Object.entries(schema)) {
+    const val = args[field];
+    if (val === undefined || val === null) {
+      if (rule.required) {
+        errors.push(`缺少必填参数 ${field}`);
+      }
+      continue;
+    }
+    if (typeof val !== rule.type) {
+      errors.push(`应为 ${rule.type} 收到了 ${typeof val} ${field}`);
+    }
+    if (rule.enum && !rule.enum.includes(val as string)) {
+      errors.push(`必须是 ${rule.enum} 之一 ${field}, 但收到了 ${val}`);
+    }
+  }
+  return { ok: errors.length === 0, errors };
 }
