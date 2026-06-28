@@ -12,7 +12,7 @@
  * 来源：materials/raw/25-context-splitting.txt §"父子模式" / §"Multi-Agent 的本质是上下文管理策略"
  */
 
-import type { LLM, Message } from "../_shared/llm.js";
+import type { LLM, Message } from "../_shared/types.js";
 
 /** 子 Agent 的系统提示：它在自己干净的上下文里干活，最后用一段话汇报结论。 */
 export const SUBAGENT_SYS = "你是子 Agent，在独立上下文里完成任务后用一段话汇报结论";
