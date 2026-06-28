@@ -28,7 +28,7 @@ export interface IngestResult {
  * 摄入一篇新文档：建条目，并和已有条目里「共享至少一个关键词」的互相加交叉引用。
  * @param doc 新文档（不带 links，links 由本函数建立）
  */
-export function ingest(doc: Omit<Entry, "links">, kb: KB): IngestResult {git add -A && git commit -m "feat(m04-s22): 编译知识库 ingest 互链（共享关键词双向 + 知识复利）" && git push
+export function ingest(doc: Omit<Entry, "links">, kb: KB): IngestResult {
   const kbCopy = { ...kb };
   const entry: Entry = { ...doc, links: [] };
   const touched: string[] = [entry.id];

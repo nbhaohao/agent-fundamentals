@@ -26,12 +26,10 @@ export class FileMemory {
 
   /** 记一条：写 <name>.md 正文，并在 MEMORY.md 索引追加一行指针。 */
   remember(m: MemInput): void {
-    // TODO: stage s23 —— ~4 行
-    // 1. 把正文写进 this.fs[m.name + '.md'] = m.body
-    // 2. 读现有索引 this.fs[INDEX]（没有就空串），追加一行：
-    //      '- [' + name + '](' + name + '.md) — ' + description + '\n'
-    // 3. 写回 this.fs[INDEX]
-    throw new Error("TODO: stage s23 —— 实现 remember");
+    this.fs[m.name + ".md"] = m.body;
+    let indexContent = this.fs[INDEX] ?? "";
+    indexContent += `- ${m.name}.md — ${m.description}\n`;
+    this.fs[INDEX] = indexContent;
   }
 
   /** 召回：读 MEMORY.md 索引，挑 description 命中 query 词的行，读回对应正文。 */
@@ -41,6 +39,16 @@ export class FileMemory {
     // 2. 按行拆；对每行用正则抽出 (name.md) 和 description（'— ' 之后的部分）
     // 3. 若 description 含 query 里任一个词（按空格/字符简单匹配）→ 读 this.fs[name.md] 收集
     // 4. 返回命中的正文数组
-    throw new Error("TODO: stage s23 —— 实现 recall");
+    const indexContent = this.fs[INDEX] ?? "";
+    if (!indexContent) return [];
+    const lines = indexContent.split("\n");
+    const results: string[] = [];
+    for (const line of lines) {
+      const match = line.match(/^- (\w+)\.md — (.*)$/);
+      if (match && match[2].includes(query)) {
+        results.push(this.fs[match[1] + ".md"]);
+      }
+    }
+    return results;
   }
 }
