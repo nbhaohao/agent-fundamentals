@@ -43,5 +43,33 @@ export function auditMemories(mems: Mem[], world: World): Issue[] {
   //      否则若 mem.symbol 给了且 该文件内容不含 symbol → push {stale, 'symbol 已不在'}
   // 3. conflict：同一个 key 出现多条但 value 不同 → 对涉及的每条 push {conflict, ...}
   //      （提示：先按 key 分组，组内 value 去重后大于 1 个就都算冲突）
-  throw new Error("TODO: stage s24 —— 实现 auditMemories");
+  const issues: Issue[] = [];
+
+  for (const mem of mems) {
+    if (world.derivable.includes(mem.key)) {
+      issues.push({
+        id: mem.id,
+        type: "redundant",
+        detail: "可从代码/git 推导，不该存",
+      });
+    }
+    if (mem.file && !world.files[mem.file]) {
+      issues.push({ id: mem.id, type: "stale", detail: "file 不存在" });
+    } else if (
+      mem.symbol &&
+      !world.files[mem.file as string]?.includes(mem.symbol)
+    ) {
+      issues.push({
+        id: mem.id,
+        type: "stale",
+        detail: "symbol 已不在",
+      });
+    }
+    const group = mems.filter((m) => m.key === mem.key);
+    if (group.length > 1 && new Set(group.map((m) => m.value)).size > 1) {
+      issues.push({ id: mem.id, type: "conflict", detail: "value 不同" });
+    }
+  }
+
+  return issues;
 }
