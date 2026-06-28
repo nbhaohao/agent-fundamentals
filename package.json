@@ -23,7 +23,12 @@
     "v:s14": "tsx src/s14-permissions/run.ts",
     "v:s17": "tsx src/s17-context-compression/run.ts",
     "v:s18": "tsx src/s18-cache-cost/run.ts",
-    "v:s19": "tsx src/s19-jit-context/run.ts"
+    "v:s19": "tsx src/s19-jit-context/run.ts",
+    "v:s20": "tsx src/s20-rag-pipeline/run.ts",
+    "v:s21": "tsx src/s21-retrieval-optimization/run.ts",
+    "v:s22": "tsx src/s22-knowledge-compilation/run.ts",
+    "v:s23": "tsx src/s23-memory-system/run.ts",
+    "v:s24": "tsx src/s24-memory-failures/run.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.0",

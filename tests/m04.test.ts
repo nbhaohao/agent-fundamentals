@@ -4,6 +4,12 @@ import { compress, estTokens, CLEARED, type CMsg } from "../src/s17-context-comp
 import { cacheCost, type Block } from "../src/s18-cache-cost/exercise.js";
 import { runAgent, runEager } from "../src/s19-jit-context/exercise.js";
 import { mockModel } from "../src/s19-jit-context/model.js";
+import { retrieve } from "../src/s20-rag-pipeline/exercise.js";
+import { KB } from "../src/s20-rag-pipeline/embed.js";
+import { hybridSearch } from "../src/s21-retrieval-optimization/exercise.js";
+import { ingest, type KB as WikiKB } from "../src/s22-knowledge-compilation/exercise.js";
+import { FileMemory, type FS } from "../src/s23-memory-system/exercise.js";
+import { auditMemories, type Mem } from "../src/s24-memory-failures/exercise.js";
 
 // s15 是 quiz-only（五维度地图归类），无 exercise / 无测试。
 
@@ -128,5 +134,113 @@ describe("stage 5 · s19 JIT Agent Loop：按需探索定位 bug，比全读省 
   it("JIT 进上下文的字符数 < 全读基线（按需取省 token）", () => {
     const r = runAgent(task, mockModel);
     expect(r.totalChars).toBeLessThan(runEager());
+  });
+});
+
+// ───────────────────────── stage 6 · s20 最小 RAG 检索 ─────────────────────────
+describe("stage 6 · s20 RAG retrieve：top-k 取最相关 + 语义相似≠任务相关", () => {
+  it("部署类 query → 部署相关 chunk 占据 top-2、排在无关内容前面", () => {
+    const top = retrieve("怎么部署服务", KB, 2);
+    expect(top).toHaveLength(2); // k 限制数量
+    const ids = top.map((c) => c.id);
+    expect(ids).toContain("deploy-arch");
+    expect(ids).toContain("deploy-cmd");
+    expect(top[0].score).toBeGreaterThanOrEqual(top[1].score); // 降序
+  });
+
+  it("相关 chunk 分数 > 无关 chunk（检索的本质是排出相关性）", () => {
+    const all = retrieve("怎么部署服务", KB, KB.length);
+    const deploy = all.find((c) => c.id === "deploy-cmd")!;
+    const style = all.find((c) => c.id === "style")!;
+    expect(deploy.score).toBeGreaterThan(style.score);
+  });
+});
+
+// ───────────────────────── stage 7 · s21 混合检索 ─────────────────────────
+describe("stage 7 · s21 混合检索：BM25 归一化 + 加权合并", () => {
+  it("精确错误码 query → 含该码的 chunk 排第一，且关键词分被 sigmoid 归一化到 0..1", () => {
+    const top = hybridSearch("ECONNREFUSED", KB, 3);
+    expect(top[0].id).toBe("oncall"); // 唯一含 ECONNREFUSED 的 chunk
+    expect(top[0].kw).toBeGreaterThan(0.6); // 命中稀有词 → 关键词分明显更高
+    expect(top[0].kw).toBeLessThanOrEqual(1); // 已归一化，没爆出 0..1
+  });
+
+  it("最终分 = 0.7×向量 + 0.3×关键词（两路归一化后才能加权合并）", () => {
+    const top = hybridSearch("ECONNREFUSED", KB, 1);
+    const r = top[0];
+    expect(r.score).toBeCloseTo(0.7 * r.vec + 0.3 * r.kw, 6);
+  });
+});
+
+// ───────────────────────── stage 8 · s22 编译知识库 ─────────────────────────
+describe("stage 8 · s22 ingest：新文档与相关条目互链（知识复利）", () => {
+  const base = (): WikiKB => ({
+    compA: { id: "compA", title: "竞品A", keywords: ["竞品A", "团队"], summary: "竞品A 概况", links: [] },
+    trend: { id: "trend", title: "行业趋势", keywords: ["裁员", "行业"], summary: "行业动态", links: [] },
+  });
+
+  it("新文档与共享关键词的条目双向互链，并记录 touched", () => {
+    const r = ingest({ id: "layoff", title: "竞品A裁员", keywords: ["竞品A", "裁员"], summary: "竞品A 大裁员" }, base());
+    expect(r.kb["layoff"].links).toContain("compA"); // 共享「竞品A」
+    expect(r.kb["layoff"].links).toContain("trend"); // 共享「裁员」
+    expect(r.kb["compA"].links).toContain("layoff"); // 双向回链
+    expect(r.touched.sort()).toEqual(["compA", "layoff", "trend"]);
+  });
+
+  it("无共享关键词 → 不建链（不强行关联）", () => {
+    const r = ingest({ id: "lunch", title: "午餐安排", keywords: ["午餐"], summary: "周五聚餐" }, base());
+    expect(r.kb["lunch"].links).toHaveLength(0);
+    expect(r.touched).toEqual(["lunch"]);
+  });
+});
+
+// ───────────────────────── stage 9 · s23 文件记忆 ─────────────────────────
+describe("stage 9 · s23 FileMemory：跨会话 write/read 读回", () => {
+  it("一个会话 remember，换个实例（新会话）能 recall 回来", () => {
+    const fs: FS = {};
+    new FileMemory(fs).remember({ name: "user_pref", description: "用户是后端工程师，前端不熟", body: "偏好 Go / 分布式" });
+    // 换一个实例 = 新会话，读同一份文件系统
+    const recalled = new FileMemory(fs).recall("后端");
+    expect(recalled).toContain("偏好 Go / 分布式");
+  });
+
+  it("description 不匹配 query → 不召回（按相关性挑，不是全量塞）", () => {
+    const fs: FS = {};
+    const mem = new FileMemory(fs);
+    mem.remember({ name: "a", description: "用户偏好 pnpm", body: "用 pnpm" });
+    mem.remember({ name: "b", description: "测试用 vitest", body: "用 vitest" });
+    expect(mem.recall("pnpm")).toEqual(["用 pnpm"]); // 只命中相关那条
+  });
+});
+
+// ───────────────────────── stage 10 · s24 记忆失效检测 ─────────────────────────
+describe("stage 10 · s24 auditMemories：redundant / stale / conflict", () => {
+  const world = {
+    files: { "src/userService.ts": "export function getUserById() {}" },
+    derivable: ["技术栈"], // 能从 package.json 推导
+  };
+
+  it("能从代码推导的 key → redundant（不该存）", () => {
+    const mems: Mem[] = [{ id: "m1", key: "技术栈", value: "用 TypeScript" }];
+    const issues = auditMemories(mems, world);
+    expect(issues.find((i) => i.id === "m1")?.type).toBe("redundant");
+  });
+
+  it("引用的文件/符号已不在 → stale（用前要验证）", () => {
+    const mems: Mem[] = [
+      { id: "m2", key: "getUser位置", value: "在 utils.ts", file: "src/utils.ts", symbol: "getUserById" }, // 文件没了
+      { id: "m3", key: "其它", value: "x", file: "src/userService.ts", symbol: "deletedFn" }, // 符号没了
+    ];
+    const issues = auditMemories(mems, world);
+    expect(issues.filter((i) => i.type === "stale").map((i) => i.id).sort()).toEqual(["m2", "m3"]);
+  });
+
+  it("同一 key 新旧值矛盾 → conflict（两条都标记，现实优先去更新）", () => {
+    const mems: Mem[] = [
+      { id: "m4", key: "注释偏好", value: "不要写注释" },
+      { id: "m5", key: "注释偏好", value: "关键逻辑必须有注释" },
+    ];
+    const issues = auditMemories(mems, world).filter((i) => i.type === "conflict");
+    expect(issues.map((i) => i.id).sort()).toEqual(["m4", "m5"]);
   });
 });
