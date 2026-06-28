@@ -56,5 +56,35 @@ export function compress(messages: CMsg[], opts: CompressOpts): CompressResult {
   //    若 work.length > 1：head = work.slice(0,-1)；
   //      work = [{id:'summary', role:'assistant', content: summarize(head)}, 最后一条]
   //    返回 {work, recovered, summarized:true}
-  throw new Error("TODO: stage s17 —— 实现 compress 三级压缩");
+  let recovered: Record<string, string> = {};
+  let work: CMsg[] = messages.slice();
+  const fits = () => estTokens(work) <= opts.budget;
+  if (fits()) {
+    return { messages: work, recovered, summarized: false };
+  }
+  const oldCount = Math.max(0, work.length - opts.recentKeep);
+  for (let i = 0; i < oldCount; i++) {
+    const msg = work[i];
+    if (msg && msg.role === "tool" && msg.content !== CLEARED) {
+      recovered[msg.id] = msg.content;
+      msg.content = CLEARED;
+    }
+  }
+  if (fits()) {
+    return { messages: work, recovered, summarized: false };
+  }
+  while (work.length > opts.recentKeep && !fits()) {
+    work.shift();
+  }
+  if (fits()) {
+    return { messages: work, recovered, summarized: false };
+  }
+  if (work.length > 1) {
+    const head = work.slice(0, -1);
+    work = [
+      { id: "summary", role: "assistant", content: opts.summarize(head) },
+      work[work.length - 1],
+    ];
+  }
+  return { messages: work, recovered, summarized: true };
 }
