@@ -7,6 +7,7 @@
     "verify": "vitest run tests/m01.test.ts",
     "verify:m02": "vitest run tests/m02.test.ts",
     "verify:m03": "vitest run tests/m03.test.ts",
+    "verify:m04": "vitest run tests/m04.test.ts",
     "v": "vitest run -t",
     "v:s03": "tsx --env-file .env src/s03-minimal-loop/run.ts",
     "v:s04": "tsx --env-file .env src/s04-llm-fundamentals/run.ts",
@@ -19,7 +20,10 @@
     "v:s11": "tsx src/s11-deferred-tools/run.ts",
     "v:s12": "tsx src/s12-mcp-client/run.ts",
     "v:s13": "tsx src/s13-skills/run.ts",
-    "v:s14": "tsx src/s14-permissions/run.ts"
+    "v:s14": "tsx src/s14-permissions/run.ts",
+    "v:s17": "tsx src/s17-context-compression/run.ts",
+    "v:s18": "tsx src/s18-cache-cost/run.ts",
+    "v:s19": "tsx src/s19-jit-context/run.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.0",
