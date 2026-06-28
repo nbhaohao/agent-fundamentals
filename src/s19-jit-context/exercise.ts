@@ -11,7 +11,10 @@ import type { ModelInput, ModelOutput } from "./model.js";
 /** 工具表：模型给名字+参数，这里执行，结果回到模型。返回字符串（进上下文的内容）。 */
 export const tools: Record<string, (args: any) => string> = {
   glob_files: ({ pattern }) => globFiles(pattern).join("\n"),
-  grep_content: ({ pattern }) => grepContent(pattern).map((h) => `${h.file}:${h.line} ${h.content}`).join("\n"),
+  grep_content: ({ pattern }) =>
+    grepContent(pattern)
+      .map((h) => `${h.file}:${h.line} ${h.content}`)
+      .join("\n"),
   read_file: ({ path }) => readFileTool(path),
 };
 
@@ -31,17 +34,24 @@ export function runAgent(
   model: (input: ModelInput) => ModelOutput,
   maxTurns = 8,
 ): AgentResult {
-  // TODO: stage s19 —— ~14 行
-  // 1. toolHistory = []；turn = 0
-  // 2. while turn < maxTurns：
-  // 3.   decision = model({ userMessage, toolHistory })
-  // 4.   若 decision.kind==='final'：
-  //        totalChars = toolHistory 所有 result.length 之和
-  //        return { answer: decision.content, toolHistory, totalChars }
-  // 5.   否则取 decision.call 的 {name, args}，result = tools[name](args)
-  // 6.   toolHistory.push({ name, args, result })；turn++
-  // 7. 循环结束（达到 maxTurns）：返回 answer 提示未完成 + 当前 toolHistory + totalChars
-  throw new Error("TODO: stage s19 —— 实现 runAgent loop");
+  const toolHistory: { name: string; args: any; result: string }[] = [];
+  let turn = 0;
+  while (turn < maxTurns) {
+    const decision = model({ userMessage, toolHistory });
+    if (decision.kind === "final") {
+      const totalChars = toolHistory.reduce(
+        (sum, h) => sum + h.result.length,
+        0,
+      );
+      return { answer: decision.content, toolHistory, totalChars };
+    }
+    const { name, args } = decision.call;
+    const result = tools[name](args);
+    toolHistory.push({ name, args, result });
+    turn++;
+  }
+  const totalChars = toolHistory.reduce((sum, h) => sum + h.result.length, 0);
+  return { answer: "未完成", toolHistory, totalChars };
 }
 
 /** 已就位：全读基线——把所有文件一股脑读进来，返回总字符数（对照组）。 */
