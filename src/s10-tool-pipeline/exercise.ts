@@ -6,7 +6,10 @@
  * 来源：materials/raw/09-tool-pipeline.txt §"一条管线的全貌" / §"错误信息是给模型看的"
  */
 import type { ToolCall, ToolResult } from "../_shared/types.js";
-import { validateToolCall, type ToolSchema } from "../s09-function-calling/exercise.js";
+import {
+  validateToolCall,
+  type ToolSchema,
+} from "../s09-function-calling/exercise.js";
 
 export type Permission = "allow" | "deny";
 
@@ -30,13 +33,24 @@ export async function dispatchTool(
   registry: Record<string, PipelineTool>,
   opts: DispatchOpts = {},
 ): Promise<ToolResult> {
-  // TODO: stage s10 —— ~18 行（依赖 s09 的 validateToolCall）
-  // 0.  小工具：err(msg) = { toolCallId: call.id, content: `[错误] ${msg}` }（错误也走 content 回填，不抛）
-  // 1.  tool = registry[call.name]；不存在 → return err(未知工具)
-  // 2.  校验：v = validateToolCall(tool.schema, call.args)；!v.ok → return err(含 v.errors)
-  // 3.  权限：perm = opts.checkPermission?.(name,args) ?? 'allow'；'deny' → return err(权限拒绝)
-  // 4.  执行：try { out = await tool.execute(call.args) } catch → return err(执行失败 + e.message)
-  // 5.  截断：max = opts.maxResultChars ?? 50000；out.length > max → out = out.slice(0,max) + 截断提示
-  // 6.  return { toolCallId: call.id, content: out }
-  throw new Error("TODO: stage s10 —— 实现 dispatchTool");
+  const err = (msg: string) => ({
+    toolCallId: call.id,
+    content: `[错误] ${msg}`,
+  });
+
+  const tool = registry[call.name];
+  if (!tool) return err(`未知工具 ${call.name}`);
+  const v = validateToolCall(tool.schema, call.args);
+  if (!v.ok) return err(`参数校验失败: ${v.errors}`);
+  const perm = opts.checkPermission?.(call.name, call.args) ?? "allow";
+  if (perm === "deny") return err("权限拒绝");
+  let out: string;
+  try {
+    out = await tool.execute(call.args);
+  } catch (e) {
+    return err(`执行失败: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  const max = opts.maxResultChars ?? 50000;
+  if (out.length > max) out = out.slice(0, max) + "截断...";
+  return { toolCallId: call.id, content: out };
 }
