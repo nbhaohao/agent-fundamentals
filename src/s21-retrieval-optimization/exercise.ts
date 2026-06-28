@@ -20,13 +20,18 @@ export interface HybridScored extends Chunk {
  * 混合检索：向量分 + 关键词分，各自归一化后按 alpha 加权合并，返回 top-k。
  * @param alpha 向量权重（默认 0.7，关键词占 0.3——语义通常比精确匹配更重要，但关键词兜精确场景）
  */
-export function hybridSearch(query: string, chunks: Chunk[], k: number, alpha = 0.7): HybridScored[] {
-  // TODO: stage s21 —— ~8 行
-  // 1. qVec = mockEmbed(query)；corpus = chunks.map(c => c.text)
-  // 2. 每个 chunk：
-  //      vec = cosine(qVec, mockEmbed(chunk.text))        // 已在 0..1
-  //      kw  = sigmoid(bm25(query, chunk.text, corpus))   // 归一化到 0..1（关键：不归一化没法合并）
-  //      score = alpha * vec + (1 - alpha) * kw
-  // 3. 按 score 降序、取前 k
-  throw new Error("TODO: stage s21 —— 实现 hybridSearch");
+export function hybridSearch(
+  query: string,
+  chunks: Chunk[],
+  k: number,
+  alpha = 0.7,
+): HybridScored[] {
+  const qVec = mockEmbed(query);
+  const corpus = chunks.map((c) => c.text);
+  const scoredChunks = chunks.map((chunk) => {
+    const vec = cosine(qVec, mockEmbed(chunk.text));
+    const kw = sigmoid(bm25(query, chunk.text, corpus));
+    return { ...chunk, score: alpha * vec + (1 - alpha) * kw, vec, kw };
+  });
+  return scoredChunks.sort((a, b) => b.score - a.score).slice(0, k);
 }
