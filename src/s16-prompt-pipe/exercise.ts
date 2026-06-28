@@ -29,5 +29,8 @@ export function buildPrompt(pipes: PromptPipe[], ctx: PromptContext): string {
   // 1. 对每个 pipe 调用 pipe(ctx) 拿到片段
   // 2. 过滤掉 null 和空串（trim 后为空也算空）——这就是「没用的 section 自动消失」
   // 3. 用 '\n\n'（空行）把剩下的片段拼成一个字符串返回
-  throw new Error("TODO: stage s16 —— 实现 buildPrompt");
+  return pipes
+    .map((pipe) => pipe(ctx))
+    .filter(Boolean)
+    .join("\n\n");
 }
