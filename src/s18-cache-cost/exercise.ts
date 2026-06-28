@@ -32,11 +32,19 @@ export interface CacheCost {
  * 算这次请求（cur）相对上次（prev）的缓存命中与成本。
  * 最长公共前缀（逐块比 text 相同）= 命中；其余 = miss。
  */
-export function cacheCost(prev: Block[], cur: Block[], opts: CacheOpts): CacheCost {
-  // TODO: stage s18 —— ~10 行
-  // 1. 求最长公共前缀长度 n：从 i=0 起，prev[i] 和 cur[i] 都存在且 text 相同就 n++，一不同就停
-  // 2. hitTokens = cur 前 n 块的 tokens 之和；missTokens = cur 剩下块的 tokens 之和
-  // 3. cost = (hitTokens * hitDiscount + missTokens) * pricePerMTok / 1_000_000
-  // 4. return { hitTokens, missTokens, cost }
-  throw new Error("TODO: stage s18 —— 实现 cacheCost");
+export function cacheCost(
+  prev: Block[],
+  cur: Block[],
+  opts: CacheOpts,
+): CacheCost {
+  let n = 0;
+  while (prev[n] && cur[n] && prev[n].text === cur[n].text) {
+    n++;
+  }
+  const hitTokens = cur.slice(0, n).reduce((a, b) => a + b.tokens, 0);
+  const missTokens = cur.slice(n).reduce((a, b) => a + b.tokens, 0);
+  const cost =
+    ((hitTokens * opts.hitDiscount + missTokens) * opts.pricePerMTok) /
+    1_000_000;
+  return { hitTokens, missTokens, cost };
 }
