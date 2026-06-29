@@ -25,10 +25,16 @@ export interface Draft {
 }
 
 /** Generator：拿任务 + 上一轮的反馈（首轮为 null），产出新一稿。 */
-export type Generator = (task: string, feedback: string | null) => Promise<Draft>;
+export type Generator = (
+  task: string,
+  feedback: string | null,
+) => Promise<Draft>;
 
 /** Evaluator：只拿 output + 验收标准，给出过/不过 + 反馈。签名里就没有 reasoning。 */
-export type Evaluator = (output: string, criteria: string[]) => Promise<{ pass: boolean; feedback: string }>;
+export type Evaluator = (
+  output: string,
+  criteria: string[],
+) => Promise<{ pass: boolean; feedback: string }>;
 
 export interface GEResult {
   /** 最终交付的 output（通过的那稿，或到顶的最后一稿）。 */
@@ -49,13 +55,22 @@ export async function generateAndEvaluate(
   evalr: Evaluator,
   maxRounds: number,
 ): Promise<GEResult> {
-  // TODO: stage s27 —— ~10 行
-  // 1. feedback 初始为 null（首轮没有反馈）；last 存最近一稿。
-  // 2. for round = 1..maxRounds：
+  // feedback 初始为 null（首轮没有反馈）；last 存最近一稿。
+  // for round = 1..maxRounds：
   //    a. last = await gen(task, feedback) —— Generator 拿任务 + 上轮反馈，出一稿。
   //    b. verdict = await evalr(last.output, criteria) —— ⚠️ 只传 last.output，绝不传 last.reasoning！
   //    c. verdict.pass → return { output: last.output, rounds: round, passed: true }（过了就停）。
   //    d. 没过 → feedback = verdict.feedback（喂回下一轮 Generator 重做）。
   // 3. 循环跑满还没过 → return { output: last.output, rounds: maxRounds, passed: false }。
-  throw new Error("TODO: stage s27");
+  let feedback: string | null = null;
+  let last: Draft | undefined;
+  for (let round = 1; round <= maxRounds; round++) {
+    last = await gen(task, feedback);
+    const verdict = await evalr(last.output, criteria);
+    if (verdict.pass)
+      return { output: last.output, rounds: round, passed: true };
+    feedback = verdict.feedback;
+  }
+  if (last) return { output: last.output, rounds: maxRounds, passed: false };
+  throw new Error("No result after max rounds");
 }
