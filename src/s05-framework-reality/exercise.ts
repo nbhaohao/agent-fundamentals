@@ -12,7 +12,7 @@ export type ChainStep = (input: string) => Promise<string>;
 export async function runChain(steps: ChainStep[], input: string): Promise<string> {
     let cur = input
     for (const step of steps) {
-        cur = await step(input);
+        cur = await step(cur);
     }
     return cur;
 }
