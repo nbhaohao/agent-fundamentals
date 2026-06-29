@@ -28,7 +28,11 @@ export interface HookCtx {
 }
 
 /** 一个 hook = 拿事件上下文，返回 exit code（+ 可选 stderr / 改写后的 payload）。模拟外部脚本。 */
-export type Hook = (ctx: HookCtx) => { exitCode: number; stderr?: string; payload?: Record<string, unknown> };
+export type Hook = (ctx: HookCtx) => {
+  exitCode: number;
+  stderr?: string;
+  payload?: Record<string, unknown>;
+};
 
 export interface HookOutcome {
   /** 是否被某个 exit 2 的 hook 阻塞。 */
@@ -46,7 +50,10 @@ export interface HookOutcome {
 /**
  * 派发一次事件：取出该事件注册的 hooks，按序跑，按 exit code 决定放行 / 阻塞 / 警告。
  */
-export function dispatchHook(ctx: HookCtx, hooks: Record<string, Hook[]>): HookOutcome {
+export function dispatchHook(
+  ctx: HookCtx,
+  hooks: Record<string, Hook[]>,
+): HookOutcome {
   // TODO: stage s28 —— ~12 行
   // 1. fired = hooks[ctx.event] ?? []（只取当前事件的 hook；别的事件一个都不跑）。
   // 2. out 初始：blocked=false, modelError=null, userWarnings=[], payload=ctx.payload, trace=[]。
@@ -57,5 +64,24 @@ export function dispatchHook(ctx: HookCtx, hooks: Record<string, Hook[]>): HookO
   //    d. r.exitCode === 2 → out.blocked=true; out.modelError = r.stderr ?? ""; break（短路，后面不跑）。
   //    e. 否则 r.exitCode !== 0 → out.userWarnings.push(r.stderr ?? "")（非阻塞，继续）。
   // 4. return out。
-  throw new Error("TODO: stage s28");
+  const fired = hooks[ctx.event] ?? [];
+  let out: HookOutcome = {
+    blocked: false,
+    modelError: null,
+    userWarnings: [],
+    payload: ctx.payload,
+    trace: [],
+  };
+  for (let i = 0; i < fired.length; i++) {
+    const r = fired[i]({ ...ctx, payload: out.payload });
+    out.trace.push(`${ctx.event}#${i} exit=${r.exitCode}`);
+    if (r.payload) out.payload = r.payload;
+    if (r.exitCode === 2) {
+      out.blocked = true;
+      out.modelError = r.stderr ?? "";
+      break;
+    }
+    if (r.exitCode !== 0) out.userWarnings.push(r.stderr ?? "");
+  }
+  return out;
 }
