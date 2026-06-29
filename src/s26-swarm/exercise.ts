@@ -28,20 +28,22 @@ export class Mailbox {
 
   /** 发消息。to='*' = 广播给除自己外所有人；to 是未知成员名 → 抛错。 */
   send(from: string, to: string, text: string): void {
-    // TODO: stage s26 —— ~6 行
-    // 1. 若 to === '*'：遍历所有 inbox，给「名字 !== from」的每个成员 push {from, text, read:false}（自己不收）
-    // 2. 否则点对点：this.inboxes.get(to)，拿不到（未知成员）→ throw new Error
-    //    拿到就 push {from, text, read:false}
-    throw new Error("TODO: stage s26");
+    if (to === "*") {
+      for (const [name, inbox] of this.inboxes.entries()) {
+        if (name !== from) inbox.push({ from, text, read: false });
+      }
+    } else {
+      const inbox = this.inboxes.get(to);
+      if (!inbox) throw new Error(`未知成员: ${to}`);
+      inbox.push({ from, text, read: false });
+    }
   }
 
   /** 取某成员收件箱里的未读消息，标记为已读后返回（再次 receive 不会重复拿到）。 */
   receive(agent: string): Msg[] {
-    // TODO: stage s26 —— ~4 行
-    // 1. 取该 agent 的 inbox（没有就空数组）
-    // 2. 过滤出 read===false 的消息
-    // 3. 把这些标记成 read=true（下次 receive 不再返回）
-    // 4. 返回这批未读
-    throw new Error("TODO: stage s26");
+    const inbox = this.inboxes.get(agent) ?? [];
+    const unread = inbox.filter((m) => !m.read);
+    for (const m of unread) m.read = true;
+    return unread;
   }
 }
