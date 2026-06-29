@@ -15,7 +15,8 @@
 import type { LLM, Message } from "../_shared/types.js";
 
 /** 子 Agent 的系统提示：它在自己干净的上下文里干活，最后用一段话汇报结论。 */
-export const SUBAGENT_SYS = "你是子 Agent，在独立上下文里完成任务后用一段话汇报结论";
+export const SUBAGENT_SYS =
+  "你是子 Agent，在独立上下文里完成任务后用一段话汇报结论";
 
 export interface DelegateResult {
   /** 派完活之后的父上下文：只比原来多了「一条摘要」，不含任何子读过的原文。 */
@@ -43,5 +44,18 @@ export async function spawnSubAgent(
   // 4. summary = (await llm.chat(child)).text —— 把整个子上下文压成一段结论摘要
   // 5. return { parent: 父上下文末尾只追加一条 {role:'user', content: summary}, childChars }
   //    —— 不能把 docs 原文加进父！父只看到那条摘要。
-  throw new Error("TODO: stage s25");
+  let child: Message[] = [
+    { role: "system", content: SUBAGENT_SYS },
+    { role: "user", content: task },
+  ];
+  let childChars = 0;
+  for (const doc of docs) {
+    child.push({ role: "user", content: doc });
+    childChars += doc.length;
+  }
+  const summary = (await llm.chat(child)).text;
+  return {
+    parent: [...parent, { role: "user", content: summary }],
+    childChars,
+  };
 }
