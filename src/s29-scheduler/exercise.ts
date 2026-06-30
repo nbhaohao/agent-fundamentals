@@ -45,22 +45,5 @@ export function tick(jobs: Job[], now: number): TickResult {
   //          remaining.push({ ...j, runAt: next })。
   //        - 无 intervalMs（一次性）：不放回 remaining（跑完即弃）。
   // 3. return { fired, remaining }。
-  const fired = [];
-  const remaining = [];
-  for (let i = 0; i < jobs.length; i++) {
-    const j = jobs[i];
-    if (j.runAt > now) {
-      remaining.push(j);
-      continue;
-    }
-    fired.push(j);
-    if (j.intervalMs) {
-      let next = j.runAt;
-      while (next <= now) {
-        next += j.intervalMs;
-      }
-      remaining.push({ ...j, runAt: next });
-    }
-  }
-  return { fired, remaining };
+  throw new Error("TODO: stage s29");
 }

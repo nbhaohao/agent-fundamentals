@@ -36,7 +36,9 @@
     "v:s27": "tsx src/s27-harness/run.ts",
     "v:s28": "tsx src/s28-hooks/run.ts",
     "v:s29": "tsx src/s29-scheduler/run.ts",
-    "v:s30": "tsx src/s30-acp/run.ts"
+    "v:s30": "tsx src/s30-acp/run.ts",
+    "verify:m07": "vitest run tests/m07.test.ts",
+    "v:s31": "tsx src/s31-stategraph/run.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^1.2.0",

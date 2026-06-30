@@ -62,15 +62,5 @@ export async function generateAndEvaluate(
   //    c. verdict.pass → return { output: last.output, rounds: round, passed: true }（过了就停）。
   //    d. 没过 → feedback = verdict.feedback（喂回下一轮 Generator 重做）。
   // 3. 循环跑满还没过 → return { output: last.output, rounds: maxRounds, passed: false }。
-  let feedback: string | null = null;
-  let last: Draft | undefined;
-  for (let round = 1; round <= maxRounds; round++) {
-    last = await gen(task, feedback);
-    const verdict = await evalr(last.output, criteria);
-    if (verdict.pass)
-      return { output: last.output, rounds: round, passed: true };
-    feedback = verdict.feedback;
-  }
-  if (last) return { output: last.output, rounds: maxRounds, passed: false };
-  throw new Error("No result after max rounds");
+  throw new Error("TODO: stage s27");
 }

@@ -64,24 +64,5 @@ export function dispatchHook(
   //    d. r.exitCode === 2 → out.blocked=true; out.modelError = r.stderr ?? ""; break（短路，后面不跑）。
   //    e. 否则 r.exitCode !== 0 → out.userWarnings.push(r.stderr ?? "")（非阻塞，继续）。
   // 4. return out。
-  const fired = hooks[ctx.event] ?? [];
-  let out: HookOutcome = {
-    blocked: false,
-    modelError: null,
-    userWarnings: [],
-    payload: ctx.payload,
-    trace: [],
-  };
-  for (let i = 0; i < fired.length; i++) {
-    const r = fired[i]({ ...ctx, payload: out.payload });
-    out.trace.push(`${ctx.event}#${i} exit=${r.exitCode}`);
-    if (r.payload) out.payload = r.payload;
-    if (r.exitCode === 2) {
-      out.blocked = true;
-      out.modelError = r.stderr ?? "";
-      break;
-    }
-    if (r.exitCode !== 0) out.userWarnings.push(r.stderr ?? "");
-  }
-  return out;
+  throw new Error("TODO: stage s28");
 }

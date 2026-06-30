@@ -52,18 +52,5 @@ export function handleRpc(req: RpcRequest, agent: AcpAgent): RpcResponse {
   // 3. 没有 h（未知方法）→ return { jsonrpc:"2.0", id:req.id,
   //      error:{ code:-32601, message:`Method not found: ${req.method}` } } —— 注意也带 id。
   // 4. 有 h → return { jsonrpc:"2.0", id:req.id, result: h(req.params) }。
-  const handlers: Record<string, (p: any) => any> = {
-    initialize: (p) => agent.initialize(p),
-    newSession: (p) => agent.newSession(p),
-    prompt: (p) => agent.prompt(p),
-  };
-  const h = handlers[req.method];
-  if (!h) {
-    return {
-      jsonrpc: "2.0",
-      id: req.id,
-      error: { code: -32601, message: `Method not found: ${req.method}` },
-    };
-  }
-  return { jsonrpc: "2.0", id: req.id, result: h(req.params) };
+  throw new Error("TODO: stage s30");
 }
